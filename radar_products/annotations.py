@@ -1,6 +1,7 @@
 import os
 import textwrap
 from io import BytesIO
+from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
@@ -21,6 +22,8 @@ def add_side_panel(panel_ax, product_data):
     value_units = product_data.get("value_units", "dBZ")
 
     panel_rows = [
+        ("Product", f"{product_data.get('product_label', 'CMAX')} / {product_data.get('field_name', '')}"),
+        ("Source format", source_format_label(metadata["source_file"])),
         ("Source", metadata["source_file"]),
         ("Scan", metadata["scan_name"]),
         ("Strategy", metadata["scan_strategy"]),
@@ -59,6 +62,17 @@ def add_side_panel(panel_ax, product_data):
             linespacing=0.9,
         )
         y -= SIDE_PANEL_ROW_BASE_STEP + SIDE_PANEL_ROW_LINE_STEP * line_count
+
+
+def source_format_label(value):
+    name = Path(str(value)).name.lower()
+    if name.endswith('.vol.nc4'):
+        return 'NetCDF-4 volume'
+    if name.endswith('.vol'):
+        return 'Rainbow volume'
+    if name.endswith('.cmax'):
+        return 'CMAX product'
+    return 'Radar input'
 
 
 def add_side_panel_header(panel_ax, cmax_data, radar_site):
@@ -248,6 +262,7 @@ def format_legend_label(value, unit_label):
         value_text = str(int(value))
     else:
         value_text = f"{value:g}"
+    return f"{value_text} {unit_label}" if unit_label else value_text
 
 def wrap_text(value, width):
     text = str(value).replace(",", ", ")
