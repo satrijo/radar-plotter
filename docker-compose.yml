@@ -15,6 +15,8 @@ services:
       PLOT_TIMEOUT: "900"
       XDG_CACHE_HOME: /app/cache
       MPLCONFIGDIR: /app/cache/matplotlib
+      USE_BASEMAP_TILES: ${USE_BASEMAP_TILES:-false}
+      MAPTILER_TILE_URL: ${MAPTILER_TILE_URL:-}
     volumes:
       - /mnt/qnap_radar:/mnt/qnap_radar:ro
       - /home/twl/apps/radar-plotter/output:/app/output

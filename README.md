@@ -50,4 +50,4 @@ docker compose up -d
 
 Input NFS is mounted read-only. Generated products are persisted in the `radar-output` volume.
 
-Basemap tiles are disabled by default for worker reliability. If required, configure `USE_BASEMAP_TILES=true` and inject `MAPTILER_TILE_URL` at runtime; no API key belongs in Git.
+Basemap tiles are disabled by default for worker reliability. If required, create a local `.env` (ignored by Git) with `USE_BASEMAP_TILES=true` and `MAPTILER_TILE_URL=...`; Compose forwards it at runtime and no API key belongs in Git.
