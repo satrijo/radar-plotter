@@ -48,6 +48,12 @@ docker compose build
 docker compose up -d
 ```
 
-Input NFS is mounted read-only. Generated products are persisted in the `radar-output` volume.
+Input NFS is mounted read-only. Generated products are bind-mounted to `/home/twl/apps/radar-plotter/output`. Basemap and Matplotlib caches are bind-mounted separately to `/home/twl/apps/radar-plotter/cache`.
 
 Basemap tiles are disabled by default for worker reliability. If required, create a local `.env` (ignored by Git) with `USE_BASEMAP_TILES=true` and `MAPTILER_TILE_URL=...`; Compose forwards it at runtime and no API key belongs in Git.
+
+## Runtime health
+
+The worker publishes a Redis heartbeat at `radar:worker:<consumer>`. Docker healthcheck verifies Redis connectivity and heartbeat freshness. Worker metrics are stored in the same hash, including completed, retry, and dead-letter totals.
+
+`PLOTTER_CONCURRENCY` controls bounded parallel plotting; default is `2`.

@@ -13,6 +13,8 @@ services:
       REDIS_CONSUMER: radar-plotter-1
       REDIS_MAX_ATTEMPTS: "3"
       PLOT_TIMEOUT: "900"
+      PLOTTER_CONCURRENCY: "2"
+      PLOTTER_HEARTBEAT_TTL: "30"
       XDG_CACHE_HOME: /app/cache
       MPLCONFIGDIR: /app/cache/matplotlib
       USE_BASEMAP_TILES: ${USE_BASEMAP_TILES:-false}
@@ -27,6 +29,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 
 networks:

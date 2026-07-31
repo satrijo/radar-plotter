@@ -34,3 +34,6 @@ Thumbs.db
 data/
 output/
 codedb.snapshot
+
+# Local runtime cache
+cache/
