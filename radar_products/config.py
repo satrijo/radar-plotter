@@ -116,7 +116,7 @@ USE_BASEMAP_TILES = os.getenv("USE_BASEMAP_TILES", "false").lower() == "true"
 BASEMAP_TILE_PROVIDER = "MapTiler Satellite"
 BASEMAP_TILE_URL = os.getenv("MAPTILER_TILE_URL", "")
 BASEMAP_TILE_ZOOM = 10
-BASEMAP_TILE_CACHE_DIR = OUTPUT_DIR / "backdrop_cache"
+BASEMAP_TILE_CACHE_DIR = Path(os.getenv("BASEMAP_TILE_CACHE_DIR", "cache/basemap"))
 BASEMAP_TILE_USER_AGENT = "BMKG-Cilacap-Radar-CMAX/1.0"
 BASEMAP_TILE_INTERPOLATION = "bilinear"
 BASEMAP_ATTRIBUTION_TEXT = "© Radar contributors"
