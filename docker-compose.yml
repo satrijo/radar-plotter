@@ -4,16 +4,14 @@ services:
       context: .
       dockerfile: Dockerfile
     image: radar-plotter:local
-    container_name: radar-plotter
     restart: unless-stopped
     environment:
       REDIS_URL: redis://redis:6379/0
       REDIS_STREAM: radar:jobs
       REDIS_GROUP: radar-plotter
-      REDIS_CONSUMER: radar-plotter-1
       REDIS_MAX_ATTEMPTS: "3"
       PLOT_TIMEOUT: "900"
-      PLOTTER_CONCURRENCY: "2"
+      PLOTTER_CONCURRENCY: "1"
       PLOTTER_HEARTBEAT_TTL: "30"
       XDG_CACHE_HOME: /app/cache
       MPLCONFIGDIR: /app/cache/matplotlib

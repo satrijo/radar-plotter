@@ -73,3 +73,21 @@ RADAR_SAMPLE_FILE=/mnt/qnap_radar/Radar/2026/07/31/12/2026073112200100dBZ.vol.nc
 ```
 
 The Docker base image is pinned by digest and the primary radar runtime dependencies are version-pinned in `environment.yml`.
+
+## Autoscaling
+
+Each plotter replica uses its container hostname as the Redis consumer identity. Scale manually or run the lag controller:
+
+```bash
+./scripts/scale_plotter.sh
+```
+
+Default policy:
+
+- lag `>= 100`: 3 replicas
+- lag `50..99`: 2 replicas
+- lag `<= 20`: 1 replica
+
+Override `MIN_REPLICAS`, `MAX_REPLICAS`, `SCALE_UP_LAG`, `SCALE_MAX_LAG`, or `SCALE_DOWN_LAG` when needed. All replicas share the read-only NFS input and host output/cache mounts.
+
+The rendering smoke test also checks the golden output contract: 3900x2400 pixels, RGB/RGBA output, non-empty visual content, and a real `.nc4` render.

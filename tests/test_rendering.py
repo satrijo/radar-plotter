@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from main import run_once
+from PIL import Image
 
 
 @pytest.mark.integration
@@ -17,3 +18,8 @@ def test_real_radar_rendering(tmp_path):
     output = run_once(sample_path, tmp_path, "cmax")
     assert output.is_file()
     assert output.stat().st_size > 10_000
+    with Image.open(output) as image:
+        assert image.size == (3900, 2400)
+        assert image.mode in {"RGB", "RGBA"}
+        extrema = image.convert("RGB").getextrema()
+        assert any(low != high for low, high in extrema)

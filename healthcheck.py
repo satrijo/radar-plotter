@@ -1,4 +1,5 @@
 import os
+import socket
 import sys
 import time
 
@@ -7,7 +8,7 @@ import redis
 def main():
     client = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"))
     client.ping()
-    consumer = os.getenv("REDIS_CONSUMER", "radar-plotter-1")
+    consumer = os.getenv("REDIS_CONSUMER", socket.gethostname())
     heartbeat = client.hget(f"radar:worker:{consumer}", "heartbeat_at")
     if heartbeat is None or time.time() - float(heartbeat) > int(os.getenv("PLOTTER_HEARTBEAT_TTL", "30")):
         raise RuntimeError("worker heartbeat is stale")
