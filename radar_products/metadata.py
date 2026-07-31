@@ -2,7 +2,7 @@ from radar_products.config import DATA_FILE
 from radar_products.netcdf_reader import get_attr
 
 
-def get_product_metadata(nc):
+def get_product_metadata(nc, source_file=None):
     scan = nc.groups["scan"]
     pargroup = scan.groups["pargroup"]
     high_prf = get_attr(pargroup, "highprf", "")
@@ -14,7 +14,7 @@ def get_product_metadata(nc):
     )
 
     return {
-        "source_file": DATA_FILE.name,
+        "source_file": source_file or DATA_FILE.name,
         "scan_name": get_attr(scan, "name", get_attr(nc, "type", "unknown")),
         "scan_strategy": get_attr(pargroup, "scanstrategy", "n/a"),
         "clutter_filter": get_clutter_filter_label(pargroup),

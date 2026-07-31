@@ -28,7 +28,7 @@ def load_netcdf_volume(path):
         slices = list_slices(nc)
         time_label = get_time_label(nc)
         radar_site = get_radar_site(nc)
-        product_metadata = get_product_metadata(nc)
+        product_metadata = get_product_metadata(nc, path.name)
         slice_data_list = [read_slice(nc, item["name"]) for item in slices]
 
     for slice_data in slice_data_list:

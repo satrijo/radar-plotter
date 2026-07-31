@@ -1,0 +1,36 @@
+services:
+  radar-plotter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: radar-plotter:local
+    container_name: radar-plotter
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REDIS_STREAM: radar:jobs
+      REDIS_GROUP: radar-plotter
+      REDIS_CONSUMER: radar-plotter-1
+      REDIS_MAX_ATTEMPTS: "3"
+      PLOT_TIMEOUT: "900"
+      XDG_CACHE_HOME: /app/cache
+      MPLCONFIGDIR: /app/cache/matplotlib
+    volumes:
+      - /mnt/qnap_radar:/mnt/qnap_radar:ro
+      - radar-output:/app/output
+      - radar-plotter-cache:/app/cache
+    networks:
+      - radar-pipeline
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  radar-output:
+  radar-plotter-cache:
+
+networks:
+  radar-pipeline:
+    external: true
+    name: radar-pipeline

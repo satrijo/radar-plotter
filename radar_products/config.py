@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import numpy as np
@@ -111,11 +112,9 @@ LEGEND_TICK_LENGTH = 0.025
 LEGEND_LABEL_GAP = 0.05
 LEGEND_LABEL_FONT_SIZE = 8
 
-USE_BASEMAP_TILES = True
+USE_BASEMAP_TILES = os.getenv("USE_BASEMAP_TILES", "false").lower() == "true"
 BASEMAP_TILE_PROVIDER = "MapTiler Satellite"
-BASEMAP_TILE_URL = (
-    "https://api.maptiler.com/maps/backdrop-v4/{z}/{x}/{y}.png?key=PpV9R6MZBq89hl6JpIvp"
-)
+BASEMAP_TILE_URL = os.getenv("MAPTILER_TILE_URL", "")
 BASEMAP_TILE_ZOOM = 10
 BASEMAP_TILE_CACHE_DIR = OUTPUT_DIR / "backdrop_cache"
 BASEMAP_TILE_USER_AGENT = "BMKG-Cilacap-Radar-CMAX/1.0"

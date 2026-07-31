@@ -917,7 +917,7 @@ def save_product_netcdf(product_data, output_file):
         product_var.units = product_data.get("value_units", "dBZ")
         product_var.long_name = product_data.get("product_label", variable_name)
 
-        nc.source_file = str(DATA_FILE)
+        nc.source_file = product_data.get("source_file", str(DATA_FILE))
         nc.product_type = product_data.get("product_label", variable_name)
         nc.grid_resolution_km = product_data["grid_resolution_km"]
         nc.elevations_degrees = ",".join(
