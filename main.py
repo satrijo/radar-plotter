@@ -52,9 +52,19 @@ def run_once(data_file, output_root, product_type):
     product_data = build_product(product_type, radar_data)
     product_data["source_file"] = str(data_file)
     output_stem = data_file.name
-    for suffix in (".vol.nc4", ".vol.nc", ".nc4", ".nc", ".vol", ".cmax", ".cappi", ".ppi"):
+    source_suffixes = (
+        (".vol.nc4", "_vol_nc4"),
+        (".vol.nc", "_vol_nc"),
+        (".nc4", "_nc4"),
+        (".nc", "_nc"),
+        (".vol", "_vol"),
+        (".cmax", "_cmax"),
+        (".cappi", "_cappi"),
+        (".ppi", "_ppi"),
+    )
+    for suffix, source_label in source_suffixes:
         if output_stem.lower().endswith(suffix):
-            output_stem = output_stem[:-len(suffix)]
+            output_stem = output_stem[:-len(suffix)] + source_label
             break
     image_name = output_name_for_product(OUTPUT_CMAX_IMAGE_NAME, product_type)
     image_file = run_output_dir / f"{Path(image_name).stem}_{output_stem}{Path(image_name).suffix}"
