@@ -11,6 +11,8 @@ from pathlib import Path
 
 import redis
 
+from radar_products.volume_policy import should_skip_partial
+
 STREAM = os.getenv("REDIS_STREAM", "radar:jobs")
 GROUP = os.getenv("REDIS_GROUP", "radar-plotter")
 CONSUMER = os.getenv("REDIS_CONSUMER", socket.gethostname())
@@ -90,6 +92,25 @@ def process_job(client, message_id, fields):
         return False
 
     key = f"radar:job:{job_id}"
+    try:
+        volume_check = should_skip_partial(job["path"])
+    except Exception as exc:
+        log.warning("Volume preflight failed for job %s; continuing to plot: %s", job_id, exc)
+        volume_check = None
+    if volume_check and volume_check["partial"]:
+        now = str(time.time())
+        client.hset(key, mapping={
+            "status": "skipped_partial",
+            "skipped_at": now,
+            "sweep_count": volume_check["sweep_count"],
+            "elevations": ",".join(str(x) for x in volume_check["elevations"]),
+        })
+        client.xack(STREAM, GROUP, message_id)
+        client.hincrby(WORKER_KEY, "skipped_partial_total", 1)
+        client.hset(WORKER_KEY, "last_skipped_partial_at", now)
+        log.warning("Skipped partial volume job %s: sweeps=%d minimum=%d path=%s", job_id, volume_check["sweep_count"], int(os.getenv("MIN_VOLUME_SWEEPS", "3")), job["path"])
+        return True
+
     attempts = int(client.hget(key, "attempts") or 0) + 1
     client.hset(key, mapping={"status": "processing", "attempts": attempts, "consumer": CONSUMER})
     command = [

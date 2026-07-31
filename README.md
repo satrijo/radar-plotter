@@ -91,3 +91,14 @@ Default policy:
 Override `MIN_REPLICAS`, `MAX_REPLICAS`, `SCALE_UP_LAG`, `SCALE_MAX_LAG`, or `SCALE_DOWN_LAG` when needed. All replicas share the read-only NFS input and host output/cache mounts.
 
 The rendering smoke test also checks the golden output contract: 3900x2400 pixels, RGB/RGBA output, non-empty visual content, and a real `.nc4` render.
+
+## Partial volume policy
+
+The plotter inspects volume metadata before plotting. No fixed elevation-angle list is required. Configure the behavior in `.env`:
+
+```env
+PARTIAL_VOLUME_POLICY=skip
+MIN_VOLUME_SWEEPS=3
+```
+
+`skip` ACKs a volume with fewer than the configured sweep count and records `status=skipped_partial`; `process` keeps the existing behavior and plots it. `.cmax` inputs are not treated as raw elevation volumes. Recreate the plotter after changing the setting.
