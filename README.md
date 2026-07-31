@@ -57,3 +57,19 @@ Basemap tiles are disabled by default for worker reliability. If required, creat
 The worker publishes a Redis heartbeat at `radar:worker:<consumer>`. Docker healthcheck verifies Redis connectivity and heartbeat freshness. Worker metrics are stored in the same hash, including completed, retry, and dead-letter totals.
 
 `PLOTTER_CONCURRENCY` controls bounded parallel plotting; default is `2`.
+
+## Tests
+
+Unit tests run without external radar data:
+
+```bash
+docker run --rm radar-plotter:local python -m pytest -q tests
+```
+
+Run the real rendering smoke test with an accessible `.nc4` sample:
+
+```bash
+RADAR_SAMPLE_FILE=/mnt/qnap_radar/Radar/2026/07/31/12/2026073112200100dBZ.vol.nc4 docker compose run --rm -e RADAR_SAMPLE_FILE radar-plotter python -m pytest -q tests/test_rendering.py
+```
+
+The Docker base image is pinned by digest and the primary radar runtime dependencies are version-pinned in `environment.yml`.

@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 from pathlib import Path
 from urllib.request import HTTPError, Request, URLError, urlopen
 
@@ -10,6 +11,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as path_effects
+from PIL import Image
 import numpy as np
 from pyproj import Transformer
 
