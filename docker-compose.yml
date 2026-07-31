@@ -17,7 +17,7 @@ services:
       MPLCONFIGDIR: /app/cache/matplotlib
     volumes:
       - /mnt/qnap_radar:/mnt/qnap_radar:ro
-      - radar-output:/app/output
+      - /home/twl/apps/radar-plotter/output:/app/output
       - radar-plotter-cache:/app/cache
     networks:
       - radar-pipeline
@@ -27,7 +27,6 @@ services:
       - ALL
 
 volumes:
-  radar-output:
   radar-plotter-cache:
 
 networks:
