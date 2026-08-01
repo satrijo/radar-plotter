@@ -121,7 +121,7 @@ def sample_slice_on_cartesian_grid(
     return (sampled, beam_height_km) if return_height else sampled
 
 
-def smooth_masked_field(field, sigma):
+def smooth_masked_field(field, sigma, minimum=None):
     if sigma <= 0:
         return field
 
@@ -135,4 +135,4 @@ def smooth_masked_field(field, sigma):
     valid = smoothed_weights > MIN_SAMPLE_WEIGHT
     smoothed[valid] = smoothed_values[valid] / smoothed_weights[valid]
     smoothed = np.ma.masked_invalid(smoothed)
-    return np.ma.masked_less(smoothed, DISPLAY_MIN_DBZ)
+    return np.ma.masked_less(smoothed, minimum) if minimum is not None else np.ma.masked_invalid(smoothed)

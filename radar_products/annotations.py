@@ -19,13 +19,10 @@ def add_side_panel(panel_ax, product_data):
     metadata = product_data["metadata"]
     draw_product_legend(panel_ax, product_data)
     add_side_panel_header(panel_ax, product_data, radar_site)
-    value_units = product_data.get("value_units", "dBZ")
+    value_units = product_data.get("value_units", "native")
 
     product_label = product_data.get("product_label", "CMAX")
-    if product_label == "CMAX":
-        product_definition = "max reflectivity across elevations"
-    else:
-        product_definition = "derived radar product"
+    product_definition = product_data.get("product_definition", "derived radar product")
     panel_rows = [
         ("Product", f"{product_label} / {product_data.get('field_name', '')}"),
         ("Definition", product_definition),
@@ -42,7 +39,7 @@ def add_side_panel(panel_ax, product_data):
         ("QC", "metadata only; no quality mask"),
         ("Data", metadata["data_types"]),
         ("Elev.", metadata["elevation_range"]),
-        ("Peak", f"{product_data['peak_dbz']:.1f} {value_units}"),
+        ("Peak", format_peak_value(product_data, value_units)),
         ("Radar", f"{radar_site['lon']:.3f}, {radar_site['lat']:.3f}"),
     ]
 
@@ -70,6 +67,13 @@ def add_side_panel(panel_ax, product_data):
             linespacing=0.9,
         )
         y -= SIDE_PANEL_ROW_BASE_STEP + SIDE_PANEL_ROW_LINE_STEP * line_count
+
+
+def format_peak_value(product_data, value_units):
+    value = product_data.get("peak_value", product_data.get("peak_dbz"))
+    if value is None or not np.isfinite(value):
+        return f"n/a {value_units}".strip()
+    return f"{value:.2f} {value_units}".strip()
 
 
 def source_format_label(value):
@@ -186,20 +190,11 @@ def logo_resample_filter():
 
 
 def draw_product_legend(panel_ax, product_data):
-    if product_data.get("legend_kind") == "rain_rate":
-        draw_equal_interval_legend(
-            panel_ax,
-            RAIN_RATE_COLORS,
-            RAIN_RATE_LABELS,
-            "mm/h",
-        )
-        return
-
     draw_equal_interval_legend(
         panel_ax,
-        REFLECTIVITY_COLORS,
-        REFLECTIVITY_LABELS,
-        "dBZ",
+        product_data.get("legend_colors", REFLECTIVITY_COLORS),
+        product_data.get("legend_labels", REFLECTIVITY_LABELS),
+        product_data.get("value_units", "native"),
     )
 
 

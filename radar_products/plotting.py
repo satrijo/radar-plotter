@@ -142,6 +142,7 @@ from radar_products.config import (
     USE_BASEMAP_TILES,
 )
 from radar_products.processing import smooth_masked_field
+from radar_products.field_specs import apply_field_spec, make_field_colormap
 from radar_products.map_layers import add_basemap_tiles, add_kecamatan_overlay, add_map_guides, add_osm_attribution
 from radar_products.annotations import (
     add_side_panel,
@@ -168,8 +169,12 @@ def save_elevation_gif(slice_data_list, output_file):
 
 def render_elevation_frame(slice_data):
     elevation_data = build_ppi(slice_data)
-    display_field = np.ma.masked_less(elevation_data["field"], DISPLAY_MIN_DBZ)
-    cmap, norm = make_reflectivity_colormap()
+    elevation_data = apply_field_spec(elevation_data)
+    display_min = elevation_data.get("display_min")
+    display_field = np.ma.asarray(elevation_data["field"])
+    if display_min is not None:
+        display_field = np.ma.masked_less(display_field, display_min)
+    cmap, norm = make_field_colormap(elevation_data)
     cmap.set_bad(TRANSPARENT_COLOR)
 
     radar_site = elevation_data["radar_site"]
@@ -223,10 +228,14 @@ def render_elevation_frame(slice_data):
 
 def plot_product(product_data, output_file):
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    display_min = product_data.get("display_min", DISPLAY_MIN_DBZ)
-    display_field = np.ma.masked_less(product_data["field"], display_min)
-    display_field = smooth_masked_field(display_field, DISPLAY_SMOOTH_SIGMA)
-    display_field = np.ma.masked_less(display_field, display_min)
+    product_data = apply_field_spec(product_data)
+    display_min = product_data.get("display_min")
+    display_field = np.ma.asarray(product_data["field"])
+    if display_min is not None:
+        display_field = np.ma.masked_less(display_field, display_min)
+    display_field = smooth_masked_field(display_field, DISPLAY_SMOOTH_SIGMA, display_min)
+    if display_min is not None:
+        display_field = np.ma.masked_less(display_field, display_min)
     cmap, norm = make_product_colormap(product_data)
     cmap.set_bad(TRANSPARENT_COLOR)
 
@@ -364,19 +373,7 @@ def make_reflectivity_colormap():
 
 
 def make_product_colormap(product_data):
-    if product_data.get("legend_kind") == "rain_rate":
-        cmap = ListedColormap(RAIN_RATE_COLORS, name="bmkg_rain_rate")
-        cmap.set_under(TRANSPARENT_COLOR)
-        cmap.set_over(RAIN_RATE_OVER_COLOR)
-        norm = BoundaryNorm(RAIN_RATE_BOUNDS, cmap.N, extend="max")
-        return cmap, norm
-
-    return make_reflectivity_colormap()
-
-    return f"{value_text} {unit_label}"
-
-
-
+    return make_field_colormap(product_data)
 
 def add_footer(fig):
     fig.text(
@@ -414,7 +411,7 @@ def save_product_netcdf(product_data, output_file):
 
         x_var.units = "km"
         y_var.units = "km"
-        product_var.units = product_data.get("value_units", "dBZ")
+        product_var.units = product_data.get("value_units", "native")
         product_var.long_name = product_data.get("product_label", variable_name)
 
         nc.source_file = product_data.get("source_file", str(DATA_FILE))
