@@ -17,6 +17,7 @@ STREAM = os.getenv("REDIS_STREAM", "radar:jobs")
 GROUP = os.getenv("REDIS_GROUP", "radar-plotter")
 CONSUMER = os.getenv("REDIS_CONSUMER", socket.gethostname())
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+REDIS_SOCKET_TIMEOUT = float(os.getenv("REDIS_SOCKET_TIMEOUT", "15"))
 MAX_ATTEMPTS = int(os.getenv("REDIS_MAX_ATTEMPTS", "3"))
 CLAIM_IDLE_MS = int(os.getenv("REDIS_CLAIM_IDLE_MS", "60000"))
 DEAD_LETTER_STREAM = os.getenv("REDIS_DEAD_LETTER_STREAM", "radar:jobs:dead")
@@ -28,6 +29,9 @@ WORKER_KEY = f"radar:worker:{CONSUMER}"
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("radar-plotter")
 
+
+def redis_client():
+    return redis.Redis.from_url(REDIS_URL, decode_responses=False, socket_timeout=REDIS_SOCKET_TIMEOUT, socket_connect_timeout=REDIS_SOCKET_TIMEOUT)
 
 def ensure_group(client):
     try:
@@ -177,7 +181,7 @@ def reclaim_pending(client):
 
 
 def heartbeat_loop(stop_event):
-    client = redis.Redis.from_url(REDIS_URL, decode_responses=False)
+    client = redis_client()
     while not stop_event.wait(HEARTBEAT_INTERVAL):
         try:
             now = str(time.time())
@@ -195,7 +199,7 @@ def heartbeat_loop(stop_event):
 
 
 def main():
-    client = redis.Redis.from_url(REDIS_URL, decode_responses=False)
+    client = redis_client()
     client.ping()
     ensure_group(client)
     stop_event = threading.Event()
