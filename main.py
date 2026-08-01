@@ -17,13 +17,16 @@ from radar_products.products import build_product
 from radar_products.source import load_radar_file
 
 
-def output_dir_for_time(time_label, output_root, data_file):
+def output_dir_for_time(time_label, output_root, data_file, product_type):
     parts = time_label.replace(" UTC", "").split()
     if len(parts) < 2:
-        return output_root / data_file.stem
-    date = parts[0].replace("-", "")
+        return output_root / data_file.stem / product_type.lower()
+    date_parts = parts[0].split("-")
     start_clock = parts[1].split("-", 1)[0].replace(":", "")
-    return output_root / date / start_clock[:4]
+    if len(date_parts) != 3:
+        return output_root / parts[0].replace("-", "") / start_clock[:4] / product_type.lower()
+    year, month, day = date_parts
+    return output_root / year / month / day / start_clock[:4] / product_type.lower()
 
 
 def print_scan_summary(data_file, time_label, radar_site, output_dir, slices):
@@ -47,7 +50,7 @@ def run_once(data_file, output_root, product_type):
     output_root = Path(output_root)
     radar_data = load_radar_file(data_file)
     time_label = radar_data["time_label"]
-    run_output_dir = output_dir_for_time(time_label, output_root, data_file)
+    run_output_dir = output_dir_for_time(time_label, output_root, data_file, product_type)
     print_scan_summary(data_file, time_label, radar_data["radar_site"], run_output_dir, radar_data["slices"])
     product_data = build_product(product_type, radar_data)
     product_data["source_file"] = str(data_file)
