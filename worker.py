@@ -49,6 +49,11 @@ def required_job_fields(job):
     return ("job_id", "path", "product")
 
 
+def is_automatic_dzb_source(path):
+    name = Path(path).name.lower()
+    return name.endswith("dbz.vol") or name.endswith("dbz.vol.nc4")
+
+
 def validate_job(job):
     missing = [field for field in required_job_fields(job) if not job.get(field)]
     if missing:
@@ -92,6 +97,18 @@ def process_job(client, message_id, fields):
         return False
 
     key = f"radar:job:{job_id}"
+    if os.getenv("PLOTTER_AUTOMATIC_DZB_ONLY", "true").lower() in {"1", "true", "yes", "on"} and not is_automatic_dzb_source(job["path"]):
+        now = str(time.time())
+        client.hset(key, mapping={
+            "status": "skipped_noncanonical",
+            "skipped_at": now,
+            "reason": "automatic routing accepts only dBZ.vol and dBZ.vol.nc4",
+        })
+        client.xack(STREAM, GROUP, message_id)
+        client.hincrby(WORKER_KEY, "skipped_noncanonical_total", 1)
+        client.hset(WORKER_KEY, "last_skipped_noncanonical_at", now)
+        log.warning("Skipped noncanonical automatic source job %s: %s", job_id, job["path"])
+        return True
     try:
         volume_check = should_skip_partial(job["path"])
     except Exception as exc:
