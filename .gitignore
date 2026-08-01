@@ -37,3 +37,6 @@ codedb.snapshot
 
 # Local runtime cache
 cache/
+
+# Local monitoring state
+monitoring/
