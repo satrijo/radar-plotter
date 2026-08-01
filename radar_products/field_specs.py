@@ -91,8 +91,11 @@ def make_field_colormap(product_data):
     if labels.size < 2 or not colors:
         labels = np.linspace(0, 1, 8)
         colors = SEQUENTIAL_COLORS
-    cmap = ListedColormap(colors, name=f"field_{product_data.get('field_spec_key', 'native')}")
+    over_color = "#ff00e8"
+    interval_colors = list(colors[:max(labels.size - 1, 1)])
+    norm_colors = interval_colors + [over_color]
+    cmap = ListedColormap(norm_colors, name="field_" + str(product_data.get("field_spec_key", "native")))
     cmap.set_under((1.0, 1.0, 1.0, 0.0))
-    cmap.set_over("#ff00e8")
+    cmap.set_over(over_color)
     norm = BoundaryNorm(labels, cmap.N, extend="max")
     return cmap, norm

@@ -17,21 +17,27 @@ SUPPORTED_PRODUCTS = ("cmax", "ppi", "cappi", "pcappi", "sri")
 
 def finalize_product(product_data, product_type):
     product_data["product_type"] = product_type
+    product_data["beam_height_model"] = "effective Earth radius (4/3 Earth radius)"
     field_name = str(product_data.get("field_name", "Field"))
     field_key = field_name.lower().replace(" ", "")
     if product_type == "cmax":
         reflectivity = field_key in {"dbz", "dbzv", "dbuz", "dbuzv"}
-        product_data["product_label"] = "CMAX" if reflectivity else f"MAX {field_name}"
-        product_data["product_definition"] = (
-            "maximum reflectivity across elevations" if reflectivity
-            else f"maximum {field_name} across elevations"
-        )
+        aggregation = product_data.get("aggregation_method", "maximum_over_elevations")
+        labels = {
+            "maximum_over_elevations": ("CMAX" if reflectivity else f"MAX {field_name}", "maximum reflectivity across elevations" if reflectivity else f"maximum {field_name} across elevations"),
+            "minimum_over_elevations": (f"MIN {field_name}", f"minimum {field_name} across elevations"),
+            "maximum_absolute_velocity_over_elevations": (f"MAXABS {field_name}", f"maximum absolute {field_name} across elevations"),
+            "lowest_available_elevation": (f"LOWEST {field_name}", f"lowest available elevation {field_name}"),
+        }
+        product_data["product_label"], product_data["product_definition"] = labels.get(aggregation, labels["maximum_over_elevations"])
+        product_data["aggregation_method"] = aggregation
     elif product_type == "ppi":
         product_data["product_definition"] = "plan position indicator at nearest configured elevation"
     elif product_type == "cappi":
         product_data["product_definition"] = "constant-altitude plan position indicator with vertical interpolation"
     elif product_type == "pcappi":
-        product_data["product_definition"] = "pseudo-CAPPI using nearest available beam"
+        fallback = product_data.get("fallback_fraction", 0.0)
+        product_data["product_definition"] = f"pseudo-CAPPI using nearest available beam; fallback {fallback:.1%} of valid pixels"
     elif product_type == "sri":
         product_data["product_definition"] = "Z-R derived rain-rate estimate"
     return apply_field_spec(product_data)
