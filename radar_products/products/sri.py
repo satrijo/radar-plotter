@@ -5,6 +5,9 @@ from radar_products.products.ppi import build_ppi
 
 
 def build_sri(slice_data):
+    source_field = str(slice_data.get("field_name", "")).strip().lower()
+    if source_field not in {"dbz", "dbzv", "dbuz", "dbuzv"}:
+        raise ValueError("SRI requires a reflectivity field: %r" % slice_data.get("field_name"))
     reflectivity_product = build_ppi(slice_data)
     dbz = reflectivity_product["field"].filled(np.nan)
     rain_rate = reflectivity_to_rain_rate(dbz)

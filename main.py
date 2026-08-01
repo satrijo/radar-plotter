@@ -101,7 +101,7 @@ def run_once(data_file, output_root, product_type):
         "elevations": [item["elevation"] for item in radar_data["slices"]],
         "field": {"name": product_data.get("field_name", "unknown"), "units": product_data.get("value_units", "native"), "value_name": product_data.get("value_name", "Field")},
         "product_definition": product_data.get("product_definition", "derived radar product"),
-        "display_extent_km": {"x": CMAX_RANGE_X_KM, "y": CMAX_RANGE_Y_KM},
+        "display_extent_km": {"x": 2 * CMAX_RANGE_X_KM, "y": 2 * CMAX_RANGE_Y_KM},
         "quality_control": {"status": "metadata_only", "mask_applied": False, "clutter_metadata": product_data["metadata"].get("clutter_filter", "n/a")},
         "outputs": generated,
     })

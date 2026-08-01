@@ -35,7 +35,7 @@ def add_side_panel(panel_ax, product_data):
         ("PRF", metadata["prf"]),
         ("Range", metadata["source_range"]),
         ("Range step", metadata["range_step"]),
-        ("Display", f"{CMAX_RANGE_X_KM:g} x {CMAX_RANGE_Y_KM:g} km"),
+        ("Display", f"{2 * CMAX_RANGE_X_KM:g} x {2 * CMAX_RANGE_Y_KM:g} km"),
         ("QC", "metadata only; no quality mask"),
         ("Data", metadata["data_types"]),
         ("Elev.", metadata["elevation_range"]),
