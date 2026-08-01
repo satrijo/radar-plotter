@@ -192,3 +192,27 @@ Never print or commit runtime credentials. Keep `.env` mode `600`.
 A host-side check runs every five minutes and sends only state changes to the operator channel. It checks worker health/heartbeat, Redis lag/pending, and dead-letter growth. The check is intentionally silent while healthy.
 
 The local scheduler job is named `radar-pipeline-alerts`; its remote implementation is `scripts/monitor_alert.py`.
+
+## Output mirror to D drive
+
+Canonical output remains on the Linux filesystem:
+
+```text
+/home/twl/apps/radar-plotter/output
+```
+
+A systemd oneshot service mirrors it to:
+
+```text
+/mnt/d/Radar
+```
+
+The timer runs every two minutes:
+
+```bash
+systemctl --user status radar-output-mirror.timer
+systemctl --user start radar-output-mirror.service
+journalctl --user -u radar-output-mirror.service -n 50 --no-pager
+```
+
+The mirror copies PNG/output artifacts first and `latest.json` last using atomic per-file replacement. It excludes lock files and cache directories. The plotter does not depend on the mirror; a D-drive failure must not stop Redis ACK or plotting.
