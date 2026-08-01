@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from radar_products.config import DATA_FILE
 from radar_products.netcdf_reader import get_attr
 
@@ -99,4 +101,6 @@ def format_scan_time_for_panel(time_label):
     date = parts[0]
     start_time = parts[1].split("-", 1)[0]
     year, month, day = date.split("-")
-    return f"{start_time} / {day}-{month}-{year}"
+    utc_start = datetime.strptime(f"{date} {start_time.rstrip(chr(90))}", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    local_start = utc_start.astimezone(timezone(timedelta(hours=7)))
+    return f'{start_time} UTC / {local_start.strftime("%H:%M")} WIB\n{day}-{month}-{year}'

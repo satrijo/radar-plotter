@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as path_effects
 from PIL import Image
 import numpy as np
-from pyproj import Transformer
+from pyproj import Geod, Transformer
 
 from radar_products.config import *  # noqa: F403
 
@@ -286,3 +286,47 @@ def add_map_guides(ax, radar_lon, radar_lat):
         transform=ccrs.Mercator.GOOGLE,
         zorder=RADAR_MARKER_ZORDER,
     )
+    if SHOW_RANGE_RINGS:
+        add_range_rings(ax, radar_lon, radar_lat)
+    add_scale_bar(ax)
+
+
+def add_range_rings(ax, radar_lon, radar_lat):
+    geod = Geod(ellps="WGS84")
+    bearings = np.linspace(0, 360, 145)
+    for radius_km in RANGE_RING_RADII_KM:
+        lons, lats, _ = geod.fwd(
+            np.full_like(bearings, radar_lon),
+            np.full_like(bearings, radar_lat),
+            bearings,
+            np.full_like(bearings, radius_km * 1000.0),
+        )
+        ax.plot(
+            lons, lats,
+            transform=ccrs.PlateCarree(),
+            color=RANGE_RING_COLOR,
+            linewidth=RANGE_RING_LINEWIDTH,
+            alpha=RANGE_RING_ALPHA,
+            linestyle=":",
+            zorder=RADAR_MARKER_ZORDER - 1,
+        )
+        label_lon, label_lat, _ = geod.fwd(radar_lon, radar_lat, 90, radius_km * 1000.0)
+        ax.text(
+            label_lon, label_lat, f"{radius_km:g} km",
+            transform=ccrs.PlateCarree(),
+            fontsize=RANGE_RING_LABEL_FONT_SIZE,
+            color=RANGE_RING_COLOR,
+            ha="left", va="bottom",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.55, "pad": 0.5},
+            zorder=RADAR_MARKER_ZORDER + 1,
+        )
+
+
+def add_scale_bar(ax):
+    x0 = SCALE_BAR_X
+    x1 = x0 + SCALE_BAR_WIDTH_AXES
+    y = SCALE_BAR_Y
+    ax.plot([x0, x1], [y, y], transform=ax.transAxes, color=SCALE_BAR_COLOR, linewidth=SCALE_BAR_LINEWIDTH, zorder=RADAR_MARKER_ZORDER + 1)
+    ax.plot([x0, x0], [y - 0.012, y + 0.012], transform=ax.transAxes, color=SCALE_BAR_COLOR, linewidth=SCALE_BAR_LINEWIDTH, zorder=RADAR_MARKER_ZORDER + 1)
+    ax.plot([x1, x1], [y - 0.012, y + 0.012], transform=ax.transAxes, color=SCALE_BAR_COLOR, linewidth=SCALE_BAR_LINEWIDTH, zorder=RADAR_MARKER_ZORDER + 1)
+    ax.text((x0 + x1) / 2, y + 0.018, f"{SCALE_BAR_KM:g} km", transform=ax.transAxes, ha="center", va="bottom", fontsize=SCALE_BAR_FONT_SIZE, color=SCALE_BAR_COLOR, bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.65, "pad": 0.8}, zorder=RADAR_MARKER_ZORDER + 1)

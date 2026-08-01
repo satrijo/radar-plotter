@@ -21,8 +21,14 @@ def add_side_panel(panel_ax, product_data):
     add_side_panel_header(panel_ax, product_data, radar_site)
     value_units = product_data.get("value_units", "dBZ")
 
+    product_label = product_data.get("product_label", "CMAX")
+    if product_label == "CMAX":
+        product_definition = "max reflectivity across elevations"
+    else:
+        product_definition = "derived radar product"
     panel_rows = [
-        ("Product", f"{product_data.get('product_label', 'CMAX')} / {product_data.get('field_name', '')}"),
+        ("Product", f"{product_label} / {product_data.get('field_name', '')}"),
+        ("Definition", product_definition),
         ("Source format", source_format_label(metadata["source_file"])),
         ("Source", metadata["source_file"]),
         ("Scan", metadata["scan_name"]),
@@ -32,6 +38,8 @@ def add_side_panel(panel_ax, product_data):
         ("PRF", metadata["prf"]),
         ("Range", metadata["source_range"]),
         ("Range step", metadata["range_step"]),
+        ("Display", f"{CMAX_RANGE_X_KM:g} x {CMAX_RANGE_Y_KM:g} km"),
+        ("QC", "metadata only; no quality mask"),
         ("Data", metadata["data_types"]),
         ("Elev.", metadata["elevation_range"]),
         ("Peak", f"{product_data['peak_dbz']:.1f} {value_units}"),

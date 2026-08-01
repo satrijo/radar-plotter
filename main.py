@@ -2,6 +2,8 @@ import argparse
 from pathlib import Path
 
 from radar_products.config import (
+    CMAX_RANGE_X_KM,
+    CMAX_RANGE_Y_KM,
     DATA_FILE,
     OUTPUT_CMAX_IMAGE_NAME,
     OUTPUT_CMAX_NETCDF_NAME,
@@ -97,6 +99,8 @@ def run_once(data_file, output_root, product_type):
         "source": {"path": str(data_file), "name": data_file.name, "format": source_format},
         "scan_time": time_label, "sweep_count": len(radar_data["slices"]),
         "elevations": [item["elevation"] for item in radar_data["slices"]],
+        "display_extent_km": {"x": CMAX_RANGE_X_KM, "y": CMAX_RANGE_Y_KM},
+        "quality_control": {"status": "metadata_only", "mask_applied": False, "clutter_metadata": product_data["metadata"].get("clutter_filter", "n/a")},
         "outputs": generated,
     })
     return image_file
