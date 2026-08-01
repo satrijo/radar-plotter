@@ -37,7 +37,6 @@ def add_side_panel(panel_ax, product_data):
         ("Range step", metadata["range_step"]),
         ("Display", f"{2 * CMAX_RANGE_X_KM:g} x {2 * CMAX_RANGE_Y_KM:g} km"),
         ("QC", "metadata only; no quality mask"),
-        ("Data", metadata["data_types"]),
         ("Elev.", metadata["elevation_range"]),
         ("Peak", format_peak_value(product_data, value_units)),
         ("Radar", f"{radar_site['lon']:.3f}, {radar_site['lat']:.3f}"),
