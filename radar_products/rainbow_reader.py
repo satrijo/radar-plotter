@@ -27,7 +27,7 @@ def read_rainbow_volume(path):
     slice_summaries = []
     slice_data_list = []
     for index, slice_group in enumerate(slices):
-        slice_data = read_slice(slice_group, index)
+        slice_data = read_slice(slice_group, index, scan.get("pargroup", {}))
         slice_data["time_label"] = time_label
         slice_data["radar_site"] = radar_site
         slice_data["metadata"] = metadata
@@ -113,7 +113,7 @@ def read_rainbow_cmax(path):
     }
 
 
-def read_slice(slice_group, index):
+def read_slice(slice_group, index, pargroup=None):
     slicedata = slice_group["slicedata"]
     raw_group = slicedata["rawdata"]
     field = decode_rainbow_raw(
@@ -132,9 +132,10 @@ def read_slice(slice_group, index):
     ) % AZIMUTH_FULL_CIRCLE_DEG
     azimuth_edges = np.concatenate([ray_start, [ray_stop[-1]]])
 
-    start_range_km = float(slice_group.get("start_range", 0.0))
-    range_step_km = float(slice_group.get("rangestep", 0.5))
-    stop_range_km = float(slice_group.get("stoprange", field.shape[1] * range_step_km))
+    pargroup = pargroup or {}
+    start_range_km = float(slice_group.get("start_range", pargroup.get("start_range", 0.0)))
+    range_step_km = float(slice_group.get("rangestep", pargroup.get("rangestep", 0.5)))
+    stop_range_km = float(slice_group.get("stoprange", pargroup.get("stoprange", start_range_km + field.shape[1] * range_step_km)))
     range_edges_km = start_range_km + np.arange(field.shape[1] + 1) * range_step_km
 
     return {
