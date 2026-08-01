@@ -102,3 +102,13 @@ MIN_VOLUME_SWEEPS=3
 ```
 
 `skip` ACKs a volume with fewer than the configured sweep count and records `status=skipped_partial`; `process` keeps the existing behavior and plots it. `.cmax` inputs are not treated as raw elevation volumes. Recreate the plotter after changing the setting.
+
+## Plotter output metadata
+
+The plotter publishes an atomic manifest at:
+
+```text
+output/latest.json
+```
+
+It contains `schema_version`, `updated_at`, the latest completed output, and a bounded `history` list. Each latest record includes the source path/name/format, scan time, sweep count, elevations, product, status, and output paths. The manifest is safe for concurrent replicas and is written with a file lock plus atomic replace.

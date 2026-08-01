@@ -12,6 +12,7 @@ from radar_products.config import (
     WRITE_CMAX_NETCDF,
     WRITE_ELEVATION_GIF,
 )
+from radar_products.output_manifest import write_output_manifest
 from radar_products.plotting import plot_product, save_elevation_gif, save_product_netcdf
 from radar_products.products import build_product
 from radar_products.source import load_radar_file
@@ -74,15 +75,30 @@ def run_once(data_file, output_root, product_type):
     netcdf_name = output_name_for_product(OUTPUT_CMAX_NETCDF_NAME, product_type)
     netcdf_file = run_output_dir / f"{Path(netcdf_name).stem}_{output_stem}{Path(netcdf_name).suffix}"
     gif_file = run_output_dir / f"elevations_{output_stem}.gif"
+    generated = []
     if WRITE_CMAX_IMAGE:
         plot_product(product_data, image_file)
+        generated.append({"type": "image", "path": str(image_file.relative_to(output_root))})
         print(f"Saved {product_type.upper()} image to {image_file}")
     if WRITE_CMAX_NETCDF:
         save_product_netcdf(product_data, netcdf_file)
+        generated.append({"type": "netcdf", "path": str(netcdf_file.relative_to(output_root))})
         print(f"Saved {product_type.upper()} data to {netcdf_file}")
     if WRITE_ELEVATION_GIF and radar_data["slice_data_list"]:
         save_elevation_gif(radar_data["slice_data_list"], gif_file)
+        generated.append({"type": "gif", "path": str(gif_file.relative_to(output_root))})
         print(f"Saved elevation GIF to {gif_file}")
+    source_name = data_file.name.lower()
+    source_format = ("NetCDF-4 volume" if source_name.endswith(".vol.nc4") else
+                     "Rainbow volume" if source_name.endswith(".vol") else
+                     "CMAX product" if source_name.endswith(".cmax") else "Radar input")
+    write_output_manifest(output_root, {
+        "status": "completed", "product": product_type.lower(),
+        "source": {"path": str(data_file), "name": data_file.name, "format": source_format},
+        "scan_time": time_label, "sweep_count": len(radar_data["slices"]),
+        "elevations": [item["elevation"] for item in radar_data["slices"]],
+        "outputs": generated,
+    })
     return image_file
 
 
