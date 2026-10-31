@@ -266,7 +266,7 @@ def plot_product(product_data, output_file):
         norm=norm,
         alpha=RADAR_OVERLAY_ALPHA,
         zorder=RADAR_IMAGE_ZORDER,
-        interpolation="nearest",
+        interpolation=RADAR_OVERLAY_INTERPOLATION,
     )
 
     elevations = product_data["elevations"]
