@@ -59,6 +59,11 @@ LEGEND_TRIM_TO_DISPLAY_MIN = False
 # the vendor CMAX product; "gradient" draws a continuous ramp.  The map
 # overlay itself stays continuous either way (see SMOOTH_COLORSCALE).
 LEGEND_STYLE = "banded"
+# Echo clusters smaller than this are dropped from the displayed field.
+# Polar QC still lets through tiny groups of good gates (insects, AP,
+# residual clutter); at 50 m grid resolution each one becomes a visible
+# speck once the display smoothing widens it.  0 disables the filter.
+DISPLAY_MIN_ECHO_AREA_KM2 = 0.5
 # Resampling of the radar overlay.  "nearest" keeps every source pixel as
 # a hard block; "bilinear" blends them, matching modern radar viewers.
 RADAR_OVERLAY_INTERPOLATION = "bilinear"
