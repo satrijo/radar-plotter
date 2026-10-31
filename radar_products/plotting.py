@@ -26,6 +26,7 @@ from pyproj import Transformer  # noqa: E402
 
 from radar_products.display_filters import drop_small_echo_clusters
 from radar_products.config import (
+    DISPLAY_KEEP_CLUSTER_PEAK_DBZ,
     DISPLAY_MIN_ECHO_AREA_KM2,
     FOOTER_COLOR,
     FOOTER_FONT_SIZE,
@@ -240,7 +241,8 @@ def plot_product(product_data, output_file):
     if display_min is not None:
         display_field = np.ma.masked_less(display_field, display_min)
     display_field = drop_small_echo_clusters(
-        display_field, product_data.get("grid_resolution_km"), DISPLAY_MIN_ECHO_AREA_KM2)
+        display_field, product_data.get("grid_resolution_km"), DISPLAY_MIN_ECHO_AREA_KM2,
+        DISPLAY_KEEP_CLUSTER_PEAK_DBZ)
     cmap, norm = make_product_colormap(product_data)
     cmap.set_bad(TRANSPARENT_COLOR)
 

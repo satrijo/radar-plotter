@@ -63,7 +63,10 @@ LEGEND_STYLE = "banded"
 # Polar QC still lets through tiny groups of good gates (insects, AP,
 # residual clutter); at 50 m grid resolution each one becomes a visible
 # speck once the display smoothing widens it.  0 disables the filter.
-DISPLAY_MIN_ECHO_AREA_KM2 = 0.5
+DISPLAY_MIN_ECHO_AREA_KM2 = 2.0
+# A small cluster that still contains a core this strong is real
+# convection, not clutter, and is kept regardless of its area.
+DISPLAY_KEEP_CLUSTER_PEAK_DBZ = 45.0
 # Resampling of the radar overlay.  "nearest" keeps every source pixel as
 # a hard block; "bilinear" blends them, matching modern radar viewers.
 RADAR_OVERLAY_INTERPOLATION = "bilinear"
