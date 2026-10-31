@@ -1,7 +1,7 @@
 import numpy as np
-from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap, Normalize
 
-from radar_products.config import DISPLAY_MIN_DBZ
+from radar_products.config import DISPLAY_MIN_DBZ, SMOOTH_COLORSCALE
 
 
 REFLECTIVITY_COLORS = [
@@ -124,16 +124,69 @@ def trim_legend(labels, colors, minimum):
 
 
 def make_field_colormap(product_data):
+    """Build the display colormap and normalisation for a field.
+
+    A ListedColormap with BoundaryNorm renders discrete colour classes: every
+    dBZ bin jumps straight to a flat colour, so the echo looks like cut-out
+    shapes with hard colour steps.  Modern radar viewers interpolate the same
+    palette continuously instead.
+
+    When the palette lines up with the legend bounds, build a continuous
+    colormap from it so the colours stay identical at every bin centre but the
+    transitions are smooth.  The legend keeps using the original bin labels.
+    """
     labels = np.asarray(product_data.get("legend_labels", []), dtype=float)
     colors = product_data.get("legend_colors", [])
     if labels.size < 2 or not colors:
         labels = np.linspace(0, 1, 8)
         colors = SEQUENTIAL_COLORS
     over_color = "#ff00e8"
-    interval_colors = list(colors[:max(labels.size - 1, 1)])
-    norm_colors = interval_colors + [over_color]
-    cmap = ListedColormap(norm_colors, name="field_" + str(product_data.get("field_spec_key", "native")))
+    name = "field_" + str(product_data.get("field_spec_key", "native"))
+
+    interval_count = max(labels.size - 1, 1)
+    interval_colors = list(colors[:interval_count])
+    if len(interval_colors) < interval_count:
+        interval_colors = list(interval_colors) + [interval_colors[-1]] * (interval_count - len(interval_colors))
+
+    if not SMOOTH_COLORSCALE or interval_count < 2:
+        norm_colors = interval_colors + [over_color]
+        cmap = ListedColormap(norm_colors, name=name)
+        cmap.set_under((1.0, 1.0, 1.0, 0.0))
+        cmap.set_over(over_color)
+        norm = BoundaryNorm(labels, cmap.N, extend="max")
+        return cmap, norm
+
+    # Continuous ramp: place every interval colour at the centre of its own
+    # value range, then anchor the ends so the ramp spans the full range.
+    span = labels[-1] - labels[0]
+    if span <= 0:
+        norm_colors = interval_colors + [over_color]
+        cmap = ListedColormap(norm_colors, name=name)
+        cmap.set_under((1.0, 1.0, 1.0, 0.0))
+        cmap.set_over(over_color)
+        return cmap, BoundaryNorm(labels, cmap.N, extend="max")
+
+    positions = []
+    ramp_colors = []
+    for index, color in enumerate(interval_colors):
+        low = labels[index]
+        high = labels[index + 1] if index + 1 < labels.size else labels[-1]
+        positions.append((low + high) / 2.0)
+        ramp_colors.append(color)
+    positions.insert(0, labels[0])
+    ramp_colors.insert(0, interval_colors[0])
+    positions.append(labels[-1])
+    ramp_colors.append(interval_colors[-1])
+
+    normalized = [(position - labels[0]) / span for position in positions]
+    # from_list needs strictly increasing positions
+    for index in range(1, len(normalized)):
+        if normalized[index] <= normalized[index - 1]:
+            normalized[index] = min(1.0, normalized[index - 1] + 1e-6)
+
+    cmap = LinearSegmentedColormap.from_list(
+        name, list(zip(normalized, ramp_colors)), N=256)
     cmap.set_under((1.0, 1.0, 1.0, 0.0))
     cmap.set_over(over_color)
-    norm = BoundaryNorm(labels, cmap.N, extend="max")
+    norm = Normalize(vmin=labels[0], vmax=labels[-1], clip=False)
     return cmap, norm

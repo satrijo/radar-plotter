@@ -90,6 +90,7 @@ from radar_products.config import (
     PLOT_RANGE_Y_KM,
     RADAR_OVERLAY_ALPHA,
     RADAR_IMAGE_ZORDER,
+    RADAR_OVERLAY_INTERPOLATION,
     RADAR_MARKER_EDGE_COLOR,
     RADAR_MARKER_EDGE_WIDTH,
     RADAR_MARKER_FACE_COLOR,
@@ -205,7 +206,7 @@ def render_elevation_frame(slice_data):
         norm=norm,
         alpha=RADAR_OVERLAY_ALPHA,
         zorder=RADAR_IMAGE_ZORDER,
-        interpolation="nearest",
+        interpolation=RADAR_OVERLAY_INTERPOLATION,
     )
 
     ax.set_title(

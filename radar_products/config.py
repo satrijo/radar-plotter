@@ -47,6 +47,12 @@ OUTPUT_ELEVATION_GIF_NAME = "elevations.gif"
 GRID_RESOLUTION_KM = 0.05
 DISPLAY_MIN_DBZ = 10.0
 DISPLAY_SMOOTH_SIGMA = 4.0
+# Continuous colour ramp instead of discrete colour classes.  The colours
+# at every bin centre stay identical; only the transitions are smoothed.
+SMOOTH_COLORSCALE = True
+# Resampling of the radar overlay.  "nearest" keeps every source pixel as
+# a hard block; "bilinear" blends them, matching modern radar viewers.
+RADAR_OVERLAY_INTERPOLATION = "bilinear"
 
 # --- quality control -------------------------------------------------
 # QC runs in polar space, per sweep, before the Cartesian regrid, so a
@@ -123,6 +129,7 @@ SIDE_PANEL_ROW_FONT_SIZE = 5.6
 SIDE_PANEL_ROW_BASE_STEP = 0.012
 SIDE_PANEL_ROW_LINE_STEP = 0.008
 LEGEND_BORDER_LINEWIDTH = 0.8
+SIDE_PANEL_LEGEND_ZORDER = 5
 LEGEND_TICK_LENGTH = 0.025
 LEGEND_LABEL_GAP = 0.05
 LEGEND_LABEL_FONT_SIZE = 8
