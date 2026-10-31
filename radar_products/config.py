@@ -46,7 +46,45 @@ OUTPUT_ELEVATION_GIF_NAME = "elevations.gif"
 
 GRID_RESOLUTION_KM = 0.05
 DISPLAY_MIN_DBZ = 10.0
-DISPLAY_SMOOTH_SIGMA = 0.0
+DISPLAY_SMOOTH_SIGMA = 4.0
+# Continuous colour ramp instead of discrete colour classes.  The colours
+# at every bin centre stay identical; only the transitions are smoothed.
+SMOOTH_COLORSCALE = True
+# Trimming the legend to the display floor turns an even 5 dBZ scale into an
+# irregular one (10,16,20,24,...) because the floor is not a bin boundary.
+# Off: the legend spans the full scale like the vendor product, while
+# DISPLAY_MIN_DBZ still masks weak echo from the map.
+LEGEND_TRIM_TO_DISPLAY_MIN = False
+# Legend rendering style: "banded" draws solid blocks per 5 dBZ bin, like
+# the vendor CMAX product; "gradient" draws a continuous ramp.  The map
+# overlay itself stays continuous either way (see SMOOTH_COLORSCALE).
+LEGEND_STYLE = "banded"
+# Echo clusters smaller than this are dropped from the displayed field.
+# Polar QC still lets through tiny groups of good gates (insects, AP,
+# residual clutter); at 50 m grid resolution each one becomes a visible
+# speck once the display smoothing widens it.  0 disables the filter.
+DISPLAY_MIN_ECHO_AREA_KM2 = 2.0
+# A small cluster that still contains a core this strong is real
+# convection, not clutter, and is kept regardless of its area.
+DISPLAY_KEEP_CLUSTER_PEAK_DBZ = 45.0
+# Resampling of the radar overlay.  "nearest" keeps every source pixel as
+# a hard block; "bilinear" blends them, matching modern radar viewers.
+RADAR_OVERLAY_INTERPOLATION = "bilinear"
+
+# --- quality control -------------------------------------------------
+# QC runs in polar space, per sweep, before the Cartesian regrid, so a
+# masked gate can never leak into the composite.  The thresholds were
+# calibrated against the vendor RhoHV / ZDR / SQI moments of the same scan.
+QC_ENABLED = True
+QC_NOISE_SQI_MIN = 0.50
+QC_NOISE_DBZ_MAX = 20.0
+QC_CLUTTER_RHOHV_MAX = 0.87
+QC_CLUTTER_DBZ_MAX = 30.0
+QC_BIO_ZDR_MIN = 4.0
+QC_BIO_RHOHV_MAX = 0.85
+QC_DESPECKLE = True
+QC_DESPECKLE_MIN_NEIGHBOURS = 1
+QC_DESPECKLE_DBZ_MAX = 30.0
 
 PLOT_RANGE_X_KM = 80.0
 PLOT_RANGE_Y_KM = 60.0
@@ -108,6 +146,7 @@ SIDE_PANEL_ROW_FONT_SIZE = 5.6
 SIDE_PANEL_ROW_BASE_STEP = 0.012
 SIDE_PANEL_ROW_LINE_STEP = 0.008
 LEGEND_BORDER_LINEWIDTH = 0.8
+SIDE_PANEL_LEGEND_ZORDER = 5
 LEGEND_TICK_LENGTH = 0.025
 LEGEND_LABEL_GAP = 0.05
 LEGEND_LABEL_FONT_SIZE = 8

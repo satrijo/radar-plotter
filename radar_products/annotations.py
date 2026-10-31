@@ -13,6 +13,8 @@ from PIL import Image
 
 from radar_products.config import *  # noqa: F403
 
+from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
+
 
 def add_side_panel(panel_ax, product_data):
     radar_site = product_data["radar_site"]
@@ -36,7 +38,7 @@ def add_side_panel(panel_ax, product_data):
         ("Range", metadata["source_range"]),
         ("Range step", metadata["range_step"]),
         ("Display", f"{2 * CMAX_RANGE_X_KM:g} x {2 * CMAX_RANGE_Y_KM:g} km"),
-        ("QC", "metadata only; no quality mask"),
+        ("QC", qc_label(product_data)),
         ("Elev.", metadata["elevation_range"]),
         ("Peak", format_peak_value(product_data, value_units)),
         ("Radar", f"{radar_site['lon']:.3f}, {radar_site['lat']:.3f}"),
@@ -66,6 +68,18 @@ def add_side_panel(panel_ax, product_data):
             linespacing=0.9,
         )
         y -= SIDE_PANEL_ROW_BASE_STEP + SIDE_PANEL_ROW_LINE_STEP * line_count
+
+
+def qc_label(product_data):
+    report = product_data.get("quality_control") or {}
+    if not report:
+        return "metadata only; no quality mask"
+    if not report.get("mask_applied"):
+        return f"metadata only ({report.get('status', 'unknown')})"
+    removed = report.get("removed_total", 0)
+    total = report.get("gates_total", 0)
+    share = (removed / total * 100.0) if total else 0.0
+    return f"mask applied (SQI/RhoHV/ZDR); {removed} gates removed ({share:.1f}%)"
 
 
 def format_peak_value(product_data, value_units):
@@ -189,11 +203,122 @@ def logo_resample_filter():
 
 
 def draw_product_legend(panel_ax, product_data):
-    draw_equal_interval_legend(
-        panel_ax,
-        product_data.get("legend_colors", REFLECTIVITY_COLORS),
-        product_data.get("legend_labels", REFLECTIVITY_LABELS),
-        product_data.get("value_units", "native"),
+    """Draw the colour legend.
+
+    When the field is rendered with a continuous colour ramp, the legend must
+    show the same ramp -- a stack of solid rectangles would advertise discrete
+    class boundaries that the map no longer has.
+    """
+    labels = product_data.get("legend_labels", REFLECTIVITY_LABELS)
+    colors = product_data.get("legend_colors", REFLECTIVITY_COLORS)
+    unit_label = product_data.get("value_units", "native")
+
+    if LEGEND_STYLE == "gradient" and SMOOTH_COLORSCALE and len(labels) > 1 and len(colors) > 1:
+        draw_continuous_legend(panel_ax, colors, labels, unit_label)
+        return
+
+    draw_equal_interval_legend(panel_ax, colors, labels, unit_label)
+
+
+def draw_continuous_legend(panel_ax, colors, labels, unit_label):
+    """Draw the legend as a smooth gradient with the bin labels as ticks."""
+    x0 = SIDE_PANEL_LEGEND_X
+    y0 = SIDE_PANEL_LEGEND_Y
+    width = SIDE_PANEL_LEGEND_WIDTH
+    height = SIDE_PANEL_LEGEND_HEIGHT
+
+    labels = [float(value) for value in labels]
+    interval_count = max(len(labels) - 1, 1)
+    interval_colors = list(colors[:interval_count])
+    while len(interval_colors) < interval_count:
+        interval_colors.append(interval_colors[-1])
+
+    span = labels[-1] - labels[0]
+    if span <= 0:
+        draw_equal_interval_legend(panel_ax, colors, labels, unit_label)
+        return
+
+    positions = []
+    ramp_colors = []
+    for index, color in enumerate(interval_colors):
+        low = labels[index]
+        high = labels[index + 1] if index + 1 < len(labels) else labels[-1]
+        positions.append((low + high) / 2.0)
+        ramp_colors.append(color)
+    positions.insert(0, labels[0])
+    ramp_colors.insert(0, interval_colors[0])
+    positions.append(labels[-1])
+    ramp_colors.append(interval_colors[-1])
+
+    normalized = [(position - labels[0]) / span for position in positions]
+    for index in range(1, len(normalized)):
+        if normalized[index] <= normalized[index - 1]:
+            normalized[index] = min(1.0, normalized[index - 1] + 1e-6)
+
+    # The ramp must run from the lowest value at the bottom to the highest
+    # value at the top, matching the tick placement.  imshow's default
+    # origin is "upper", which flips the gradient, so set origin="lower".
+    gradient = np.linspace(0.0, 1.0, 256).reshape(-1, 1)
+    rgba = LinearSegmentedColormap.from_list(
+        "legend_ramp", list(zip(normalized, ramp_colors)), N=256)(gradient)
+    panel_ax.imshow(
+        rgba,
+        extent=(x0, x0 + width, y0, y0 + height),
+        transform=panel_ax.transAxes,
+        aspect="auto",
+        interpolation="bilinear",
+        origin="lower",
+        zorder=SIDE_PANEL_LEGEND_ZORDER,
+    )
+
+    panel_ax.add_patch(
+        Rectangle(
+            (x0, y0),
+            width,
+            height,
+            transform=panel_ax.transAxes,
+            facecolor="none",
+            edgecolor="black",
+            linewidth=LEGEND_BORDER_LINEWIDTH,
+            zorder=SIDE_PANEL_LEGEND_ZORDER + 1,
+        )
+    )
+
+    tick_values = labels
+    if len(tick_values) > 10:
+        step = max(1, len(tick_values) // 8)
+        tick_values = tick_values[::step]
+    for value in tick_values:
+        fraction = (value - labels[0]) / span
+        y = y0 + fraction * height
+        panel_ax.plot(
+            [x0 + width, x0 + width + LEGEND_TICK_LENGTH],
+            [y, y],
+            transform=panel_ax.transAxes,
+            color="black",
+            linewidth=0.6,
+            zorder=SIDE_PANEL_LEGEND_ZORDER + 1,
+        )
+        panel_ax.text(
+            x0 + width + LEGEND_TICK_LENGTH + LEGEND_LABEL_GAP,
+            y,
+            f"{value:g}",
+            transform=panel_ax.transAxes,
+            ha="left",
+            va="center",
+            fontsize=LEGEND_LABEL_FONT_SIZE,
+            zorder=SIDE_PANEL_LEGEND_ZORDER + 1,
+        )
+
+    panel_ax.text(
+        x0,
+        y0 + height + LEGEND_LABEL_GAP,
+        unit_label,
+        transform=panel_ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=LEGEND_LABEL_FONT_SIZE,
+        zorder=SIDE_PANEL_LEGEND_ZORDER + 1,
     )
 
 

@@ -24,7 +24,10 @@ from netCDF4 import Dataset  # noqa: E402
 from PIL import Image  # noqa: E402
 from pyproj import Transformer  # noqa: E402
 
+from radar_products.display_filters import drop_small_echo_clusters
 from radar_products.config import (
+    DISPLAY_KEEP_CLUSTER_PEAK_DBZ,
+    DISPLAY_MIN_ECHO_AREA_KM2,
     FOOTER_COLOR,
     FOOTER_FONT_SIZE,
     FOOTER_TEXT,
@@ -90,6 +93,7 @@ from radar_products.config import (
     PLOT_RANGE_Y_KM,
     RADAR_OVERLAY_ALPHA,
     RADAR_IMAGE_ZORDER,
+    RADAR_OVERLAY_INTERPOLATION,
     RADAR_MARKER_EDGE_COLOR,
     RADAR_MARKER_EDGE_WIDTH,
     RADAR_MARKER_FACE_COLOR,
@@ -205,7 +209,7 @@ def render_elevation_frame(slice_data):
         norm=norm,
         alpha=RADAR_OVERLAY_ALPHA,
         zorder=RADAR_IMAGE_ZORDER,
-        interpolation="nearest",
+        interpolation=RADAR_OVERLAY_INTERPOLATION,
     )
 
     ax.set_title(
@@ -236,6 +240,9 @@ def plot_product(product_data, output_file):
     display_field = smooth_masked_field(display_field, DISPLAY_SMOOTH_SIGMA, display_min)
     if display_min is not None:
         display_field = np.ma.masked_less(display_field, display_min)
+    display_field = drop_small_echo_clusters(
+        display_field, product_data.get("grid_resolution_km"), DISPLAY_MIN_ECHO_AREA_KM2,
+        DISPLAY_KEEP_CLUSTER_PEAK_DBZ)
     cmap, norm = make_product_colormap(product_data)
     cmap.set_bad(TRANSPARENT_COLOR)
 
@@ -265,7 +272,7 @@ def plot_product(product_data, output_file):
         norm=norm,
         alpha=RADAR_OVERLAY_ALPHA,
         zorder=RADAR_IMAGE_ZORDER,
-        interpolation="nearest",
+        interpolation=RADAR_OVERLAY_INTERPOLATION,
     )
 
     elevations = product_data["elevations"]
