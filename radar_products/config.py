@@ -55,6 +55,10 @@ SMOOTH_COLORSCALE = True
 # Off: the legend spans the full scale like the vendor product, while
 # DISPLAY_MIN_DBZ still masks weak echo from the map.
 LEGEND_TRIM_TO_DISPLAY_MIN = False
+# Legend rendering style: "banded" draws solid blocks per 5 dBZ bin, like
+# the vendor CMAX product; "gradient" draws a continuous ramp.  The map
+# overlay itself stays continuous either way (see SMOOTH_COLORSCALE).
+LEGEND_STYLE = "banded"
 # Resampling of the radar overlay.  "nearest" keeps every source pixel as
 # a hard block; "bilinear" blends them, matching modern radar viewers.
 RADAR_OVERLAY_INTERPOLATION = "bilinear"

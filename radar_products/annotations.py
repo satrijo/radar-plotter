@@ -213,7 +213,7 @@ def draw_product_legend(panel_ax, product_data):
     colors = product_data.get("legend_colors", REFLECTIVITY_COLORS)
     unit_label = product_data.get("value_units", "native")
 
-    if SMOOTH_COLORSCALE and len(labels) > 1 and len(colors) > 1:
+    if LEGEND_STYLE == "gradient" and SMOOTH_COLORSCALE and len(labels) > 1 and len(colors) > 1:
         draw_continuous_legend(panel_ax, colors, labels, unit_label)
         return
 
