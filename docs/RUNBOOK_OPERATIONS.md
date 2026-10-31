@@ -170,6 +170,43 @@ Dry-run retention:
 python3 /home/twl/apps/radar-plotter/scripts/retention_cleanup.py --dry-run
 ```
 
+## Display filters vs archived data
+
+The rendered image is not a straight copy of the data. Three display-only
+stages run inside `plot_product` and never modify the product itself:
+
+- `DISPLAY_MIN_DBZ` (10 dBZ) masks weak echo;
+- `DISPLAY_SMOOTH_SIGMA` (4.0) smooths the overlay;
+- `DISPLAY_MIN_ECHO_AREA_KM2` (2.0 km2) drops connected echo clusters smaller
+  than that area, unless the cluster still peaks at or above
+  `DISPLAY_KEEP_CLUSTER_PEAK_DBZ` (45 dBZ), which protects small but genuinely
+  intense convective cells. Set the area to `0` to disable the filter.
+
+Consequences for reporting and distribution:
+
+- peak reflectivity, QC percentages and gate counts come from the product and
+  quality-control stage, not from the image, so they stay complete;
+- the NetCDF export writes `product_data["field"]`, i.e. the field *before* the
+  cluster filter, so the archive keeps every echo;
+- a small echo absent from a PNG is hidden from the image, not missing from the
+  data. Never infer "no rain" from a blank area smaller than 2 km2.
+
+Tuning the cluster filter, measured on the 2026-10-31 15:30 UTC Cilacap scan
+(172.6 km2 of echo at or above 30 dBZ):
+
+- 0.5 km2: 366 visible clusters, north sector 150, heavy-echo loss under 1%;
+- 1.0 km2: 208 clusters, north 87, loss 1.0%;
+- 2.0 km2: 96 clusters, north 41, loss 1.0% (current default);
+- 5.0 km2: 41 clusters, north 17, loss 2.8%.
+
+Do not clean specks with multi-scan persistence. Requiring echo in two of three
+consecutive scans cut clusters only to 54 and cost 5.4% of the heavy-echo area;
+requiring all three scans cost 42.9%, because convective cells genuinely grow
+and decay between volumes ten minutes apart.
+
+A wider map view is the honest alternative when a display looks too busy:
+small clusters fall below the visual threshold without deleting anything.
+
 ## Change and deployment gate
 
 Before production changes:
