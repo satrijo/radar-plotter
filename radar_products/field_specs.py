@@ -1,6 +1,8 @@
 import numpy as np
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
+from radar_products.config import DISPLAY_MIN_DBZ
+
 
 REFLECTIVITY_COLORS = [
     "#d9d9d9", "#9ff7f1", "#63cfea", "#2f9df4", "#2362f1",
@@ -59,6 +61,12 @@ def field_spec(field_name):
 
 
 def apply_field_spec(product_data):
+    # The reflectivity spec carries a -10 dBZ floor so the whole dynamic
+    # range stays available for the legend.  The configured DISPLAY_MIN_DBZ
+    # must win, otherwise the low-reflectivity noise carpet floods the map.
+    configured_min = DISPLAY_MIN_DBZ if normalize_field_name(
+        product_data.get("field_name")) in {"dbz", "dbzv", "dbuz", "dbuzv"} else None
+
     existing_kind = product_data.get("legend_kind")
     if existing_kind == "rain_rate":
         product_data["value_units"] = "mm/h"
@@ -75,14 +83,44 @@ def apply_field_spec(product_data):
     product_data["field_spec_key"] = key
     product_data["value_units"] = spec["units"]
     product_data["value_name"] = spec["value_name"]
-    product_data["display_min"] = spec["display_min"]
+    product_data["display_min"] = spec["display_min"] if configured_min is None else configured_min
     product_data["display_max"] = spec["display_max"]
     product_data["legend_labels"] = spec["labels"]
     product_data["legend_colors"] = spec["colors"]
+    if configured_min is not None:
+        product_data["legend_labels"], product_data["legend_colors"] = trim_legend(
+            spec["labels"], spec["colors"], configured_min)
     product_data["legend_kind"] = spec["legend_kind"]
     product_data["product_definition"] = product_data.get("product_definition") or spec["definition"]
     product_data["peak_value"] = product_data.get("peak_value", product_data.get("peak_dbz"))
     return product_data
+
+
+def trim_legend(labels, colors, minimum):
+    """Start the legend at ``minimum`` instead of the spec's lowest bin.
+
+    The colour of the interval that contains ``minimum`` is kept, so the
+    colour scale stays continuous -- only the unused low end is dropped.
+    """
+    labels = np.asarray(labels, dtype=float)
+    colors = list(colors)
+    if labels.size < 2 or not colors:
+        return labels, colors
+    index = None
+    for i in range(labels.size - 1):
+        if labels[i] <= minimum < labels[i + 1]:
+            index = i
+            break
+    if index is None:
+        if minimum <= labels[0]:
+            return labels, colors
+        return labels[-1:], colors[-1:]
+    new_labels = np.concatenate(([minimum], labels[index + 1:]))
+    needed = new_labels.size - 1
+    new_colors = colors[index:index + needed]
+    if len(new_colors) < needed:
+        return labels, colors
+    return new_labels, new_colors
 
 
 def make_field_colormap(product_data):

@@ -36,7 +36,7 @@ def add_side_panel(panel_ax, product_data):
         ("Range", metadata["source_range"]),
         ("Range step", metadata["range_step"]),
         ("Display", f"{2 * CMAX_RANGE_X_KM:g} x {2 * CMAX_RANGE_Y_KM:g} km"),
-        ("QC", "metadata only; no quality mask"),
+        ("QC", qc_label(product_data)),
         ("Elev.", metadata["elevation_range"]),
         ("Peak", format_peak_value(product_data, value_units)),
         ("Radar", f"{radar_site['lon']:.3f}, {radar_site['lat']:.3f}"),
@@ -66,6 +66,18 @@ def add_side_panel(panel_ax, product_data):
             linespacing=0.9,
         )
         y -= SIDE_PANEL_ROW_BASE_STEP + SIDE_PANEL_ROW_LINE_STEP * line_count
+
+
+def qc_label(product_data):
+    report = product_data.get("quality_control") or {}
+    if not report:
+        return "metadata only; no quality mask"
+    if not report.get("mask_applied"):
+        return f"metadata only ({report.get('status', 'unknown')})"
+    removed = report.get("removed_total", 0)
+    total = report.get("gates_total", 0)
+    share = (removed / total * 100.0) if total else 0.0
+    return f"mask applied (SQI/RhoHV/ZDR); {removed} gates removed ({share:.1f}%)"
 
 
 def format_peak_value(product_data, value_units):

@@ -46,7 +46,22 @@ OUTPUT_ELEVATION_GIF_NAME = "elevations.gif"
 
 GRID_RESOLUTION_KM = 0.05
 DISPLAY_MIN_DBZ = 10.0
-DISPLAY_SMOOTH_SIGMA = 0.0
+DISPLAY_SMOOTH_SIGMA = 4.0
+
+# --- quality control -------------------------------------------------
+# QC runs in polar space, per sweep, before the Cartesian regrid, so a
+# masked gate can never leak into the composite.  The thresholds were
+# calibrated against the vendor RhoHV / ZDR / SQI moments of the same scan.
+QC_ENABLED = True
+QC_NOISE_SQI_MIN = 0.50
+QC_NOISE_DBZ_MAX = 20.0
+QC_CLUTTER_RHOHV_MAX = 0.87
+QC_CLUTTER_DBZ_MAX = 30.0
+QC_BIO_ZDR_MIN = 4.0
+QC_BIO_RHOHV_MAX = 0.85
+QC_DESPECKLE = True
+QC_DESPECKLE_MIN_NEIGHBOURS = 1
+QC_DESPECKLE_DBZ_MAX = 30.0
 
 PLOT_RANGE_X_KM = 80.0
 PLOT_RANGE_Y_KM = 60.0

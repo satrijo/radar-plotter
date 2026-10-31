@@ -14,7 +14,9 @@ from radar_products.config import (
     WRITE_CMAX_NETCDF,
     WRITE_ELEVATION_GIF,
 )
+from radar_products.config import QC_ENABLED
 from radar_products.output_manifest import write_output_manifest
+from radar_products.qc import apply_quality_control, is_reflectivity_field
 from radar_products.plotting import plot_product, save_elevation_gif, save_product_netcdf
 from radar_products.products import build_product
 from radar_products.source import load_radar_file
@@ -48,15 +50,35 @@ def output_name_for_product(output_name, product_type):
     return output_name.replace("cmax", product_type.lower()).replace("CMAX", product_type.upper())
 
 
+def apply_quality_control_to_radar_data(radar_data, data_file):
+    """Apply the polar-space QC mask to a loaded radar volume."""
+    clutter_metadata = radar_data["metadata"].get("clutter_filter", "n/a")
+    if not QC_ENABLED:
+        return {"status": "disabled", "mask_applied": False,
+                "clutter_metadata": clutter_metadata}
+    slices = radar_data.get("slice_data_list") or []
+    if not slices or not is_reflectivity_field(slices[0].get("field_name")):
+        return {"status": "not_applicable", "mask_applied": False,
+                "clutter_metadata": clutter_metadata}
+    radar_data["slice_data_list"], report = apply_quality_control(slices, data_file)
+    report["mask_applied"] = report["status"] == "applied"
+    report["clutter_metadata"] = clutter_metadata
+    print(f"QC: {report['status']}, removed {report['removed_total']} gates "
+          f"({report['removed_fraction']:.1%} of {report['gates_total']})")
+    return report
+
+
 def run_once(data_file, output_root, product_type):
     data_file = Path(data_file)
     output_root = Path(output_root)
     radar_data = load_radar_file(data_file)
     time_label = radar_data["time_label"]
+    qc_report = apply_quality_control_to_radar_data(radar_data, data_file)
     run_output_dir = output_dir_for_time(time_label, output_root, data_file, product_type)
     print_scan_summary(data_file, time_label, radar_data["radar_site"], run_output_dir, radar_data["slices"])
     product_data = build_product(product_type, radar_data)
     product_data["source_file"] = str(data_file)
+    product_data["quality_control"] = qc_report
     output_stem = data_file.name
     source_suffixes = (
         (".vol.nc4", "_vol_nc4"),
@@ -107,7 +129,7 @@ def run_once(data_file, output_root, product_type):
         "fallback_fraction": product_data.get("fallback_fraction"),
         "bracketed_fraction": product_data.get("bracketed_fraction"),
         "display_extent_km": {"x": 2 * CMAX_RANGE_X_KM, "y": 2 * CMAX_RANGE_Y_KM},
-        "quality_control": {"status": "metadata_only", "mask_applied": False, "clutter_metadata": product_data["metadata"].get("clutter_filter", "n/a")},
+        "quality_control": qc_report,
         "outputs": generated,
     })
     return image_file
