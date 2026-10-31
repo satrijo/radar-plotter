@@ -50,6 +50,11 @@ DISPLAY_SMOOTH_SIGMA = 4.0
 # Continuous colour ramp instead of discrete colour classes.  The colours
 # at every bin centre stay identical; only the transitions are smoothed.
 SMOOTH_COLORSCALE = True
+# Trimming the legend to the display floor turns an even 5 dBZ scale into an
+# irregular one (10,16,20,24,...) because the floor is not a bin boundary.
+# Off: the legend spans the full scale like the vendor product, while
+# DISPLAY_MIN_DBZ still masks weak echo from the map.
+LEGEND_TRIM_TO_DISPLAY_MIN = False
 # Resampling of the radar overlay.  "nearest" keeps every source pixel as
 # a hard block; "bilinear" blends them, matching modern radar viewers.
 RADAR_OVERLAY_INTERPOLATION = "bilinear"

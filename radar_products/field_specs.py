@@ -1,13 +1,26 @@
 import numpy as np
 from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap, Normalize
 
-from radar_products.config import DISPLAY_MIN_DBZ, SMOOTH_COLORSCALE
+from radar_products.config import (
+    DISPLAY_MIN_DBZ,
+    LEGEND_TRIM_TO_DISPLAY_MIN,
+    SMOOTH_COLORSCALE,
+)
 
 
 REFLECTIVITY_COLORS = [
     "#d9d9d9", "#9ff7f1", "#63cfea", "#2f9df4", "#2362f1",
     "#a8ff00", "#7ed800", "#55a600", "#2f7600", "#004800",
     "#ffff00", "#ffbf2e", "#ff8a16", "#ff4b00", "#b80000", "#ff00e8",
+]
+# Vendor CMAX scale (Rainbow/LEONARDO reference product), sampled from the
+# operator's own CMAX rendering: 14 even 5 dBZ bands from 5 to 75 dBZ, cold to
+# warm, ending in magenta/violet for extreme cores.
+VENDOR_CMAX_LABELS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75]
+VENDOR_CMAX_COLORS = [
+    "#02ffff", "#0096ff", "#0000fd", "#00ff00", "#00c700", "#009700",
+    "#ffff00", "#ffc700", "#ff7700", "#fe0000", "#c80000", "#940000",
+    "#fd00ff", "#9500ff",
 ]
 VELOCITY_COLORS = ["#173f9e", "#2864c7", "#58a6d9", "#a9d7e8", "#f4f4f4", "#f4b1b1", "#e66a6a", "#c52e45", "#8b102d"]
 SEQUENTIAL_COLORS = ["#f7fbff", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"]
@@ -31,8 +44,8 @@ def _spec(units, display_min, display_max, labels, colors, value_name=None, defi
 
 
 FIELD_SPECS = {
-    "dbz": _spec("dBZ", -10, 64, [-10, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64], REFLECTIVITY_COLORS, "Reflectivity", "Equivalent reflectivity factor"),
-    "dbzv": _spec("dBZ", -10, 64, [-10, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64], REFLECTIVITY_COLORS, "Reflectivity (vertical)", "Vertical-polarized reflectivity"),
+    "dbz": _spec("dBZ", -10, 75, VENDOR_CMAX_LABELS, VENDOR_CMAX_COLORS, "Reflectivity", "Equivalent reflectivity factor"),
+    "dbzv": _spec("dBZ", -10, 75, VENDOR_CMAX_LABELS, VENDOR_CMAX_COLORS, "Reflectivity (vertical)", "Vertical-polarized reflectivity"),
     "dbuz": _spec("dBZ", -10, 70, [-10, 0, 10, 20, 30, 40, 50, 60, 70], REFLECTIVITY_COLORS[:9], "Unattenuated reflectivity", "Unattenuated equivalent reflectivity factor"),
     "dbuzv": _spec("dBZ", -10, 70, [-10, 0, 10, 20, 30, 40, 50, 60, 70], REFLECTIVITY_COLORS[:9], "Unattenuated reflectivity (vertical)", "Vertical-polarized unattenuated reflectivity"),
     "v": _spec("m/s", -40, 40, [-40, -30, -20, -10, 0, 10, 20, 30, 40], VELOCITY_COLORS, "Radial velocity", "Radial Doppler velocity"),
@@ -87,7 +100,7 @@ def apply_field_spec(product_data):
     product_data["display_max"] = spec["display_max"]
     product_data["legend_labels"] = spec["labels"]
     product_data["legend_colors"] = spec["colors"]
-    if configured_min is not None:
+    if configured_min is not None and LEGEND_TRIM_TO_DISPLAY_MIN:
         product_data["legend_labels"], product_data["legend_colors"] = trim_legend(
             spec["labels"], spec["colors"], configured_min)
     product_data["legend_kind"] = spec["legend_kind"]
@@ -140,13 +153,16 @@ def make_field_colormap(product_data):
     if labels.size < 2 or not colors:
         labels = np.linspace(0, 1, 8)
         colors = SEQUENTIAL_COLORS
-    over_color = "#ff00e8"
     name = "field_" + str(product_data.get("field_spec_key", "native"))
 
     interval_count = max(labels.size - 1, 1)
     interval_colors = list(colors[:interval_count])
     if len(interval_colors) < interval_count:
         interval_colors = list(interval_colors) + [interval_colors[-1]] * (interval_count - len(interval_colors))
+    # Over-range takes the top band colour so the scale reads continuously to
+    # the end, instead of a pink that is not part of the palette.
+    over_color = (product_data.get("legend_over_color")
+                  or (interval_colors[-1] if interval_colors else "#ff00e8"))
 
     if not SMOOTH_COLORSCALE or interval_count < 2:
         norm_colors = interval_colors + [over_color]
